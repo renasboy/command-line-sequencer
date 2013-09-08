@@ -1,0 +1,115 @@
+#!/bin/bash
+
+tempo=170
+ms=$(echo "scale=3; 60 / $tempo / 4" | bc)
+
+declare -A beats
+declare -A drumkit=(
+    [kick]=snd/Kick_Reg_1a.wav
+    [snare]=snd/Snare_Reg_1a.wav
+    [hhc]=snd/HH_2_closed_a.wav
+    [hho]=snd/Ride_Side.wav
+)
+
+kick=(
+    1000000000100000
+    1000000000000000
+    0000000000100000
+    1010000000100000
+    1010000000000000
+    1010000000110000
+    0011000000100000
+)
+
+snare=(
+    0000100000001000
+    0000000000001000
+    0000100000000000
+    0000100101001001
+    0000100101000010
+    0100100101000010
+    0100100101001010
+)
+
+hhc=(
+    1111011111110111
+    1111011010100111
+    1111011010100011
+    1111011010100010
+    1111011010100000
+    1010101010101010
+    1010011111001010
+)
+
+hho=(
+    0000100000001000
+    0000100101011000
+    0000100101011100
+    0000100101011101
+    0000100101011111
+)
+
+random() {
+    beats=(
+        [kick]=${kick[$RANDOM % ${#kick[@]}]}
+        [snare]=${snare[$RANDOM % ${#snare[@]}]}
+        [hhc]=${hhc[$RANDOM % ${#hhc[@]}]}
+    )
+}
+
+intro() {
+    beats=(
+        [kick]=0000000000000000
+        [snare]=0000000000000000
+        [hhc]=1010101010101010
+    )
+}
+
+verse1 () {
+    beats=(
+        [kick]=1010000000100000
+        [snare]=0000100101001001
+        [hhc]=1010101010101010
+    )
+}
+
+verse2 () {
+    beats=(
+        [kick]=1000000000100000
+        [snare]=0000100000001000
+        [hhc]=1010011111001010
+    )
+}
+
+verse3 () {
+    beats=(
+        [kick]=1010000000100000
+        [snare]=0000100000001000
+        [hhc]=1010011111001010
+    )
+}
+
+sequence () {
+    intro && loop 1
+    verse1 && loop 1
+    verse2 && loop 2
+    verse1 && loop 2
+    verse3 && loop 2
+    random && loop 1
+}
+
+loop () {
+    local loop=$1
+    [[ $loop -eq 0 ]] && return;
+
+    for beat in `seq 0 15`; do
+        for kit in "${!beats[@]}"; do
+            [[ ${beats[$kit]:$beat:1} -eq 1 ]] && aplay -q ${drumkit[$kit]} &
+        done
+        sleep $ms
+    done
+
+    loop $(expr $loop - 1)
+}
+
+sequence
